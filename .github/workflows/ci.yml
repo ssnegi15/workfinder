@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Lint, test, audit, and build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm test
+
+      - name: Audit dependencies
+        run: npm audit
+
+      - name: Validate ingestion script and seed data
+        run: python -c "import ast, json, pathlib; ast.parse(pathlib.Path('scripts/ingest_jobs.py').read_text()); jobs=json.loads(pathlib.Path('src/data/jobs.json').read_text()); assert jobs, 'job seed is empty'; print(f'Validated {len(jobs)} seed jobs')"
+
+      - name: Production build
+        run: npm run build
