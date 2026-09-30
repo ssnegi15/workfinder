@@ -48,7 +48,21 @@ WORKFINDER_LLM_API_KEY=ollama
 
 Install and start Ollama, then pull the selected model with `ollama pull qwen3:8b`. The model must support OpenAI-compatible chat completions with tool calls. You may configure another HTTPS OpenAI-compatible endpoint; its privacy terms and charges are separate. Model licenses and memory requirements vary.
 
-Set `WORKFINDER_ALLOWED_ORIGIN` when running behind a reverse proxy. The production `npm start` command binds to `127.0.0.1`; expose it only through a TLS reverse proxy that adds its own authentication/access controls and HSTS policy.
+Set `WORKFINDER_ALLOWED_ORIGIN` to the exact public origin in production. `npm start` binds to `127.0.0.1` by default. Firebase App Hosting sets a runtime-only `WORKFINDER_HOSTNAME=0.0.0.0` in `apphosting.yaml`; its managed HTTPS ingress is the public boundary. For other hosts, keep the server behind a TLS reverse proxy with ingress controls and HSTS.
+
+## Deploy to Firebase App Hosting
+
+Use Firebase App Hosting to run the complete Next.js server, including the existing same-origin session and agent routes. Connect the repository and production branch to an App Hosting backend in Firebase Console; App Hosting builds and deploys that branch. GitHub Actions remains responsible for CI and any scheduled ingestion, not serving live API requests. Do not configure a static export or split the routes into Cloud Functions unless intentionally migrating the API and its cookie/origin contract.
+
+Configure the following for the App Hosting backend:
+
+- Set `NEXT_PUBLIC_FIREBASE_*` values as build-time environment variables. These are public Firebase web-app settings.
+- Set `FIREBASE_PROJECT_ID`, `WORKFINDER_ALLOWED_ORIGIN`, and any OTLP endpoints as server runtime environment variables.
+- Store `WORKFINDER_LLM_API_KEY` and `OTEL_EXPORTER_OTLP_HEADERS` in Secret Manager and expose them only at runtime when needed.
+- Grant the App Hosting runtime service identity the minimum Firebase Auth, App Check, and Firestore permissions required by Firebase Admin. Use its attached identity (ADC), never a service-account key file.
+- Add the App Hosting domain to Firebase Auth authorized domains and the App Check reCAPTCHA configuration. Configure Firestore TTL and budget alerts before accepting traffic.
+
+Verify that the selected App Hosting region and currently supported Next.js version meet deployment needs. Review Firebase and model-provider pricing; request quotas do not impose a provider dollar cap.
 
 ## Security and Usage Controls
 

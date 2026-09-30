@@ -36,7 +36,7 @@ flowchart LR
 
 ## Components
 
-- **Next.js App Router:** UI and same-origin session/agent routes. Production binds to loopback by default.
+- **Next.js App Router:** UI and same-origin session/agent routes. Firebase App Hosting runs the full Next.js server behind managed HTTPS ingress. The production start launcher binds to loopback by default; App Hosting's runtime config opts into the container interface.
 - **Firebase Auth:** email/password accounts, verification email, password reset, ID-token verification, five-day server session cookies, and revocation checks.
 - **Firebase App Check:** reCAPTCHA v3 client attestation. The browser requests limited-use tokens; the Admin SDK consumes each token to reject replay.
 - **Cloud Firestore:** server-only atomic quotas in `agentLimits/{uid}` and token aggregates in `agentUsage/{uid}/days/{UTC-date}`. `firestore.rules` denies all direct client access. Admin access is gated by verified session/App Check on each API route.
@@ -49,6 +49,10 @@ flowchart LR
 ### Firebase for identity and abuse controls
 
 The request explicitly selects Firebase. Firebase's Auth/App Check/Firestore services are managed Google services, not self-hostable open-source software; the client/Admin SDKs are Apache-2.0. Firebase is not a no-cost guarantee: quotas, App Check verification, Firestore operations, and model inference have plan/provider limits and may require billing. Review the project's current pricing and set budget alerts.
+
+### Firebase App Hosting for the full-stack runtime
+
+App Hosting runs the existing Next.js application and its `/api` routes together, preserving same-origin HttpOnly cookies and avoiding a separate API CORS boundary. The committed `apphosting.yaml` changes only the runtime bind address; local `npm start` remains loopback-only. App Hosting's managed HTTPS ingress is the public network boundary. Moving the routes to Cloud Functions would require porting them and deliberately preserving the session-cookie, Origin, and App Check controls; it is not part of this deployment.
 
 ### HttpOnly session cookie, not browser bearer tokens
 
@@ -84,7 +88,8 @@ Application code owns ranking and score calculation. The model only synthesizes 
 
 - `NEXT_PUBLIC_FIREBASE_*` values identify the web app and are public; Admin credentials and model credentials are server-only.
 - Add localhost and production domains to Firebase Auth's authorized domains and App Check's reCAPTCHA configuration.
-- The server environment needs ADC with Auth, App Check verification, and Firestore permissions. Use workload identity/attached service identity in hosting; use an ignored service-account file for local development.
+- The server environment needs ADC with Auth, App Check verification, and Firestore permissions. Use workload identity/attached service identity in App Hosting; use an ignored service-account file for local development. Keep model and OTLP credentials in runtime-only secrets.
+- `apphosting.yaml` sets `WORKFINDER_HOSTNAME=0.0.0.0` only at runtime so the managed ingress can reach the server. Do not expose the container directly; local starts remain bound to `127.0.0.1` by default.
 - Define Firestore TTL policies for the `days`, `authLimits`, `agentLimits`, and `agentGlobalLimits` collection groups using `expiresAt` if automatic 90-day deletion is required.
 - Ingest jobs intentionally before building; the app uses the JSON snapshot and has no scheduler.
 - Preferences, saved jobs, and feedback remain local and per-browser even after sign-in. Cross-device sync and server-side profile persistence are not implemented yet.
