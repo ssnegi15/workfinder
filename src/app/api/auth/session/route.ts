@@ -13,13 +13,14 @@ import {
   verifyLimitedAppCheckToken,
   verifySessionCookie,
 } from "@/lib/firebase/security";
+import { withRequestTelemetry } from "@/lib/request-telemetry";
 
 export const runtime = "nodejs";
 
 const sessionLifetimeMs = 5 * 24 * 60 * 60 * 1000;
 const privateHeaders = { "cache-control": "private, no-store" };
 
-export async function GET(request: Request): Promise<Response> {
+async function getSession(request: Request): Promise<Response> {
   const session = getSessionCookie(request);
   if (!session)
     return Response.json({ user: null }, { headers: privateHeaders });
@@ -56,7 +57,13 @@ export async function GET(request: Request): Promise<Response> {
   }
 }
 
-export async function POST(request: Request): Promise<Response> {
+export function GET(request: Request): Promise<Response> {
+  return withRequestTelemetry(request, "/api/auth/session", () =>
+    getSession(request),
+  );
+}
+
+async function createSession(request: Request): Promise<Response> {
   if (!isAllowedOrigin(request)) {
     return Response.json(
       { error: "Request origin is not allowed." },
@@ -117,7 +124,13 @@ export async function POST(request: Request): Promise<Response> {
   }
 }
 
-export async function DELETE(request: Request): Promise<Response> {
+export function POST(request: Request): Promise<Response> {
+  return withRequestTelemetry(request, "/api/auth/session", () =>
+    createSession(request),
+  );
+}
+
+async function deleteSession(request: Request): Promise<Response> {
   if (!isAllowedOrigin(request)) {
     return Response.json(
       { error: "Request origin is not allowed." },
@@ -131,4 +144,10 @@ export async function DELETE(request: Request): Promise<Response> {
     maxAge: 0,
   });
   return Response.json({ signedOut: true }, { headers: privateHeaders });
+}
+
+export function DELETE(request: Request): Promise<Response> {
+  return withRequestTelemetry(request, "/api/auth/session", () =>
+    deleteSession(request),
+  );
 }

@@ -10,6 +10,7 @@ const defaultPerMinuteLimit = 6;
 const defaultDailyRequestLimit = 40;
 const defaultDailyTokenLimit = 180_000;
 const defaultTokenReservation = 32_000;
+const limitRetentionMs = 90 * 24 * 60 * 60 * 1000;
 
 function positiveInteger(value: string | undefined, fallback: number): number {
   if (!value || !/^\d+$/.test(value)) return fallback;
@@ -106,6 +107,7 @@ export async function reserveAgentRequest(
       dayKey: decision.dayKey,
       dailyRequests: decision.dailyRequests,
       updatedAt: Timestamp.fromMillis(now),
+      expiresAt: Timestamp.fromMillis(now + limitRetentionMs),
     });
     transaction.set(
       usage,
@@ -121,6 +123,7 @@ export async function reserveAgentRequest(
       dayKey: globalDecision.dayKey,
       dailyRequests: globalDecision.dailyRequests,
       updatedAt: Timestamp.fromMillis(now),
+      expiresAt: Timestamp.fromMillis(now + limitRetentionMs),
     });
     transaction.set(
       globalUsage,

@@ -23,7 +23,7 @@ Deploy the rules with the Firebase CLI:
 firebase deploy --only firestore:rules
 ```
 
-Usage documents include an `expiresAt` field for a 90-day retention policy. Configure a Firestore TTL policy for the `days` collection group if automatic cleanup is desired; verify its current billing requirements for your Firebase plan.
+Usage and throttle documents include an `expiresAt` field for a 90-day retention policy. Configure Firestore TTL policies for the `days`, `authLimits`, `agentLimits`, and `agentGlobalLimits` collection groups if automatic cleanup is desired; verify current billing requirements for your Firebase plan.
 
 ## Run Locally
 
@@ -58,6 +58,7 @@ Set `WORKFINDER_ALLOWED_ORIGIN` when running behind a reverse proxy. The product
 - Firestore stores daily aggregate token counts, completion/tool-call counts, duration, and model name for up to 90 days when TTL is configured. Prompts, profile context, job descriptions, and model responses are not written to telemetry.
 - Saved roles, feedback, and career preferences remain in browser storage namespaced by Firebase UID. They are not synchronized to Firestore or other devices. The App Check public site key is not a secret; Firebase Admin credentials and model API keys must remain server-only.
 - Firestore client rules deny direct access. The server derives the UID only from a verified Firebase session, never from request JSON.
+- Application OpenTelemetry logs and metrics record API method, fixed route, status, and duration, with a matching `X-Request-Id` response header. They omit raw URLs, headers, bodies, user IDs, prompts, and model responses. Framework traces are sampled only when their URL/target attributes contain no query string. Configure `OTEL_EXPORTER_OTLP_ENDPOINT`, or separate `OTEL_EXPORTER_OTLP_LOGS_ENDPOINT` and `OTEL_EXPORTER_OTLP_METRICS_ENDPOINT`, for OTLP/HTTP export. Without an OTLP logs endpoint, request logs use stdout; metrics remain disabled.
 
 ## Data and Agent Behavior
 

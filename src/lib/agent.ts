@@ -124,6 +124,12 @@ function asRecord(value: unknown): Record<string, unknown> {
     : {};
 }
 
+function nonNegativeSafeInteger(value: unknown): number | null {
+  return typeof value === "number" && Number.isSafeInteger(value) && value >= 0
+    ? value
+    : null;
+}
+
 function matchReport(job: Job, preferences: CareerPreferences) {
   const description = plainText(job.description).toLowerCase();
   const requestedSkills = preferences.skills
@@ -258,10 +264,23 @@ export async function runCareerAgent(
     }
     usage.completionCalls += 1;
     if (completion.usage) {
-      usage.reportedUsageCalls += 1;
-      usage.inputTokens += completion.usage.prompt_tokens ?? 0;
-      usage.outputTokens += completion.usage.completion_tokens ?? 0;
-      usage.totalTokens += completion.usage.total_tokens ?? 0;
+      const inputTokens = nonNegativeSafeInteger(
+        completion.usage.prompt_tokens,
+      );
+      const outputTokens = nonNegativeSafeInteger(
+        completion.usage.completion_tokens,
+      );
+      const totalTokens = nonNegativeSafeInteger(completion.usage.total_tokens);
+      if (
+        inputTokens !== null &&
+        outputTokens !== null &&
+        totalTokens !== null
+      ) {
+        usage.reportedUsageCalls += 1;
+        usage.inputTokens += inputTokens;
+        usage.outputTokens += outputTokens;
+        usage.totalTokens += totalTokens;
+      }
     }
     const assistant = completion.choices[0]?.message;
     if (!assistant)

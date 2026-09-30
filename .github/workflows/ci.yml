@@ -46,5 +46,8 @@ jobs:
       - name: Validate ingestion script and seed data
         run: python -c "import ast, json, pathlib; ast.parse(pathlib.Path('scripts/ingest_jobs.py').read_text()); jobs=json.loads(pathlib.Path('src/data/jobs.json').read_text()); assert jobs, 'job seed is empty'; print(f'Validated {len(jobs)} seed jobs')"
 
+      - name: Test ingestion reconciliation
+        run: python -m unittest discover -s tests -p 'test_*.py'
+
       - name: Production build
         run: npm run build

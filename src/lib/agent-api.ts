@@ -182,8 +182,9 @@ function modelConfiguration(): { client: OpenAI; model: string } | null {
 export async function handleAgentPost(
   request: Request,
   dependencies: AgentRequestDependencies,
+  incomingRequestId?: string,
 ): Promise<Response> {
-  const requestId = randomUUID();
+  const requestId = incomingRequestId ?? randomUUID();
   if (!dependencies.isAllowedOrigin(request)) {
     return jsonResponse({ error: "Request origin is not allowed." }, 403);
   }

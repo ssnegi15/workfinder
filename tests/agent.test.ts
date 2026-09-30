@@ -263,3 +263,39 @@ test("partial provider usage is preserved when a later tool-loop request fails",
     },
   );
 });
+
+test("malformed provider token counts are not trusted for quota metering", async () => {
+  const fakeClient = {
+    chat: {
+      completions: {
+        create: async () => ({
+          usage: {
+            prompt_tokens: 100,
+            completion_tokens: 10,
+            total_tokens: -90,
+          },
+          choices: [
+            {
+              message: {
+                role: "assistant",
+                content: "A response with invalid usage metadata.",
+              },
+            },
+          ],
+        }),
+      },
+    },
+  } as unknown as OpenAI;
+
+  const result = await runCareerAgent(
+    fakeClient,
+    "test-model",
+    "Explain this job",
+    profile,
+  );
+
+  assert.equal(result.usage.reportedUsageCalls, 0);
+  assert.equal(result.usage.inputTokens, 0);
+  assert.equal(result.usage.outputTokens, 0);
+  assert.equal(result.usage.totalTokens, 0);
+});

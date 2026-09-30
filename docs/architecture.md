@@ -64,7 +64,9 @@ Firestore transactions enforce 6 agent requests per user per minute, 40 per user
 
 ### Privacy-minimized telemetry
 
-Daily Firestore aggregates include input/output/total tokens, completion/tool calls, duration, model, request/failure counts, and an `expiresAt` 90 days in the future. No prompts, answers, job descriptions, API keys, or IP addresses are logged or written to telemetry. Enable a TTL policy on the `days` collection group for automatic cleanup; TTL behavior and billing depend on the Firebase plan.
+Daily Firestore aggregates include input/output/total tokens, completion/tool calls, duration, model, request/failure counts, and an `expiresAt` 90 days in the future. Per-user auth and agent throttle documents also expire 90 days after their last update. No prompts, answers, job descriptions, API keys, or IP addresses are logged or written to telemetry. Enable TTL policies on the `days`, `authLimits`, `agentLimits`, and `agentGlobalLimits` collection groups for automatic cleanup; TTL behavior and billing depend on the Firebase plan.
+
+OpenTelemetry adds Next.js request traces plus API request logs and metrics. Logs contain only a random request ID, allow-listed method, fixed route, status, and duration; the same ID is returned in `X-Request-Id` and in agent response bodies. Metrics use only method, route, and status attributes. The trace sampler drops spans whose URL/target attributes contain a query string; query-free framework spans can still include fixed route/path metadata. Logs export over OTLP/HTTP when configured and otherwise go to stdout; metrics export only when an OTLP metrics endpoint is configured. Never add credentials, identity, request payload, model content, or dynamic URL data to telemetry attributes.
 
 ### Deterministic scores and read-only model tools
 
@@ -83,6 +85,6 @@ Application code owns ranking and score calculation. The model only synthesizes 
 - `NEXT_PUBLIC_FIREBASE_*` values identify the web app and are public; Admin credentials and model credentials are server-only.
 - Add localhost and production domains to Firebase Auth's authorized domains and App Check's reCAPTCHA configuration.
 - The server environment needs ADC with Auth, App Check verification, and Firestore permissions. Use workload identity/attached service identity in hosting; use an ignored service-account file for local development.
-- Define a Firestore TTL policy for `agentUsage/{uid}/days/*` using `expiresAt` if automatic 90-day deletion is required.
+- Define Firestore TTL policies for the `days`, `authLimits`, `agentLimits`, and `agentGlobalLimits` collection groups using `expiresAt` if automatic 90-day deletion is required.
 - Ingest jobs intentionally before building; the app uses the JSON snapshot and has no scheduler.
 - Preferences, saved jobs, and feedback remain local and per-browser even after sign-in. Cross-device sync and server-side profile persistence are not implemented yet.

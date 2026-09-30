@@ -3,6 +3,8 @@ import "server-only";
 import { Timestamp } from "firebase-admin/firestore";
 import { getFirebaseAdmin } from "@/lib/firebase/admin";
 
+const limitRetentionMs = 90 * 24 * 60 * 60 * 1000;
+
 export class SessionExchangeLimitError extends Error {
   constructor(readonly retryAfterSeconds: number) {
     super("Too many session requests.");
@@ -40,6 +42,7 @@ export async function reserveSessionExchange(
       minuteKey,
       minuteRequests: count + 1,
       updatedAt: Timestamp.fromMillis(now),
+      expiresAt: Timestamp.fromMillis(now + limitRetentionMs),
     });
   });
 }
