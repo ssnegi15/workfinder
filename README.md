@@ -1,6 +1,6 @@
 # Workfinder
 
-Workfinder combines Personal Career Agent's career research and deterministic matching with Trust Tech Jobs' public Greenhouse and Lever sources. Its bounded career agent searches and compares roles, explains match scores, finds skill gaps, and prepares interview practice. It cannot apply, contact recruiters, send messages, or access a user's device.
+Workfinder uses agent searches and compares roles, explains match scores, finds skill gaps, and prepares interview practice. It cannot apply, contact recruiters, send messages, or access a user's device.
 
 ## Requirements
 
